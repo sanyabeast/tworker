@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html>
+    <head></head>
+    <style type="text/css">
+        ::-webkit-scrollbar {
+          width: 2px;
+          height: 2px;
+        }
+        ::-webkit-scrollbar-button {
+          width: 0px;
+          height: 0px;
+        }
+        ::-webkit-scrollbar-thumb {
+          background: #e1e1e1;
+          border: 0px none #ffffff;
+          border-radius: 50px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+          background: #ffffff;
+        }
+        ::-webkit-scrollbar-thumb:active {
+          background: #000000;
+        }
+        ::-webkit-scrollbar-track {
+          background: #666666;
+          border: 0px none #ffffff;
+          border-radius: 50px;
+        }
+        ::-webkit-scrollbar-track:hover {
+          background: #666666;
+        }
+        ::-webkit-scrollbar-track:active {
+          background: #333333;
+        }
+        ::-webkit-scrollbar-corner {
+          background: transparent;
+        }
+    </style>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Ubuntu+Mono:wght@400;700&display=swap');
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            background: #222;
+            color: #eed;
+            font-family: 'Ubuntu Mono', monospace;
+            font-size: 16px;
+        }
+        
+        div {
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .button {
+            cursor: pointer;
+            padding: 12px;
+            border: 1px solid #eee;
+        }
+
+        .app {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        .app .button.setup {
+            position: absolute;
+        }
+
+        .logcats_container {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            display: grid;
+            grid-gap: 8px;
+        }
+
+        .logcat {
+            background: black;
+            border: 2px solid #eee;
+        }
+
+        .logcat {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .logcat .header {
+            height: 32px;
+            background: #111;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            padding: 12px;
+        }
+
+        .logcat .content {
+            height: calc(100% - 32px);
+            padding: 12px;
+            display: flex;
+        }
+
+        .logcat .content .lines {
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+        }
+
+        .logcat .content .lines p {
+            margin: 0;
+        }
+
+        .logcat .content .lines p[data-color="CYAN"] { color: #009688; }
+        .logcat .content .lines p[data-color="RED"] { color: #f44336; }
+        .logcat .content .lines p[data-color="MAGENTA"] { color: #9c27b0; }
+        .logcat .content .lines p[data-color="YELLOW"] { color: #ffeb3b; }
+        .logcat .content .lines p[data-color="GREEN"] { color: #8bc34a; }
+        .logcat .content .lines p[data-color="BLUE"] { color: #2196f3; }
+
+        .logcats_container[data-grid="default"] {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .logcats_container[data-grid="default"] .logcat {
+            height: 45vh;
+        }
+    </style>
+    <body>
+        <div class="app">
+            <div class="logcats_container" data-grid="default">
+
+            </div>
+        </div>
+        <script>
+            let max_log = 100
+            let logcats = {}
+            let prev_session_id = null
+
+            class LogCat {
+                constructor ( logcat_id ) {
+                    this.element = template( "#logcat" )
+                    select( ".header .caption", this.element ).innerHTML = logcat_id
+                    select( ".logcats_container" ).appendChild( this.element )
+                    this.lines_el = select ( ".content .lines", this.element )
+                }
+
+                put_line ( text, color ) {
+                    let rect = this.lines_el.getBoundingClientRect()
+
+                    while ( this.lines_el.children.length > max_log ) {
+                        this.lines_el.removeChild( this.lines_el.children[0] )
+                    }
+
+                    let scroll_down = this.lines_el.scrollTop>=this.lines_el.scrollHeight - (rect.height + 2)
+                    let line = parse_html(`<p data-color="${color}">${ text }</p>`)
+                    this.lines_el.appendChild( line )
+                    if (scroll_down) this.lines_el.scrollTop = this.lines_el.scrollHeight
+                }
+
+                kill () {
+                    console.log("killed")
+                    this.element.remove()
+                }
+            }
+
+
+            function kill_all_logcats () {
+                for ( var k in logcats ) {
+                    logcats[k].kill()
+                    delete logcats[k]
+                }
+            }
+
+            function on_log ( log_data ) {
+                if ( log_data.thread_id !== undefined ) {
+                    let t = `THREAD #${log_data.thread_id}`
+                    logcats[ t ] = logcats[ t ] || new LogCat( t.toString() )
+                    logcats[ t ].put_line( log_data.text, log_data.text_color )
+                }
+
+                if ( log_data.source !== undefined ) {
+                    let t = log_data.source
+                    logcats[ t ] = logcats[ t ] || new LogCat( t.toString() )
+                    logcats[ t ].put_line( log_data.text, log_data.text_color )
+                }
+            }
+
+            function on_message ( data ) {
+                if ( prev_session_id !== null && data.session_id !== prev_session_id ){
+                    kill_all_logcats()
+                }
+
+                switch(data.event){
+                    case "log":
+                        on_log( data.data )
+                    break
+                    case "started":
+                        console.log(1)
+                    break
+                }
+
+                prev_session_id = data.session_id
+            }
+
+            function connect_ws () {
+                let socket = null
+                try { socket = window.active_socket = new WebSocket( "ws://localhost:9900/" ); } 
+                catch ( err ) { connect_ws(); return; }
+                socket.onopen = (e)=>{ console.log("[open] Connection established"); }
+                socket.onmessage = (e)=>{
+                    try { data = JSON.parse(e.data); }
+                    catch ( err ) { console.log(err); return; }
+                    on_message( data )
+                }
+                socket.onclose = connect_ws
+                socket.onerror = function(error) {
+                    console.log(`[error]`, error);
+                };
+            }
+
+            function select ( selector, el ) { el = el||document; return el.querySelector( selector ) }
+            function select_all ( selector, el ) { el = el||document; return el.querySelectorAll( selector ) }
+            function parse_html ( html ) { let d = document.createElement( "div" );  d.innerHTML = html; return d.children[0]; }
+            function template ( selector ) { 
+                let r = select( selector ); 
+                let c = r.content instanceof DocumentFragment ? r.content.children[0] : r.content
+                return document.importNode( c, true ); 
+            }
+            document.addEventListener( "DOMContentLoaded", connect_ws )
+        </script>
+        <template id="logcat">
+            <div class="logcat">
+                <div class="header">
+                    <div class="caption"></div>
+                </div>
+                <div class="content">
+                    <div class="lines"></div>   
+                </div>
+            </div>  
+        </template> 
+    </body>
+</html>
