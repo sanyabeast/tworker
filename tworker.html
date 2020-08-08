@@ -266,8 +266,11 @@
                 <div class="button view" onclick="on_view_switch()">
                     <i class="material-icons">dashboard</i>
                 </div>
-                <div class="button view" onclick="on_theme_switch()">
+                <div class="button theme" onclick="on_theme_switch()">
                     <i class="material-icons">nights_stay</i>
+                </div>
+                <div class="button network" onclick="on_host_switch()">
+                    <i class="material-icons">wifi</i>
                 </div>
             </div>
         </div>
@@ -275,7 +278,9 @@
             let state = new Proxy ( {
                 max_log: 100,
                 current_view: 0,
-                night_mode: true
+                night_mode: true,
+                host: "localhost",
+                port: 9900
             }, {
                 set ( target, prop, value ) {
                     target[prop] = value
@@ -292,6 +297,7 @@
                 "1x1",
             ]
 
+            let socket = null
             let logcats = {}
             let prev_session_id = null
 
@@ -366,9 +372,12 @@
             }
 
             function connect_ws () {
-                let socket = null
-                try { socket = window.active_socket = new WebSocket( "ws://localhost:9900/" ); } 
-                catch ( err ) { connect_ws(); return; }
+                console.log(`trying to connect ws://${state.host}:${state.port}/`)
+                if ( socket !== null ) {
+                    socket.close()
+                }
+                try { socket = window.active_socket = new WebSocket( `ws://${state.host}:${state.port}/` ); } 
+                catch ( err ) { setTimeout(connect_ws, 250); return; }
                 socket.onopen = (e)=>{ console.log("[open] Connection established"); }
                 socket.onmessage = (e)=>{
                     try { data = JSON.parse(e.data); }
@@ -394,6 +403,11 @@
                 let data = localStorage.getItem( "state" )
                 if ( typeof data === "string" ) {
                     data = JSON.parse( data )
+                    data = {
+                        ...state,
+                        ...data
+                    }
+
                     state = new Proxy( data, {
                         set ( target, prop, value ) {
                             target[prop] = value
@@ -431,6 +445,13 @@
             function on_theme_switch () {
                 state.night_mode = !state.night_mode
                 select( ".app" ).setAttribute( "data-night-mode", state.night_mode ? "1" : "0" )
+            }
+
+            function on_host_switch () {
+                state.host = prompt("Please enter host, e.g. 192.168.1.101 or localhost")
+                state.port = prompt("Please enter port, e.g. 8000")
+                kill_all_logcats()
+                connect_ws()
             }
         </script>
         <template id="logcat">
