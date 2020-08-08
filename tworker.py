@@ -1,5 +1,9 @@
 from core import CoreObject  
 import sys
+import threading
+import random
+import asyncio
+import time
 
 sys.path.append( "workers" )
 
@@ -44,12 +48,42 @@ class TWorker( CoreObject ):
         else: 
             self.exit_app( "please provide data for at least one worker" )
 
+        t1 = threading.Thread(target=self.test_daemon, args=( "Some Thread", "0.75", "RED" ))
+        t1.daemon = True
+        t1.start()
+
+        t2 = threading.Thread(target=self.test_daemon, args=( "Yet Another Thread", "1", "CYAN" ))
+        t2.daemon = True
+        t2.start()
+
+        t3 = threading.Thread(target=self.test_daemon, args=( "And Event Yet Another One", "1.5", "MAGENTA" ))
+        t3.daemon = True
+        t3.start()
+
         # self.run_while_loop()
         while True:
             self.log("kekekeke")
             self.log("Привет, бандиты", "RED")
             self.log("Ну, здаров", "MAGENTA")
-            self.sleep(1)
+            self.ws.emit("log", {
+                "source": "Random",
+                "text": str(random.random()),
+                "text_color": "GREEN"
+            })
+            self.sleep(random.random() * 5)
+
+    def test_daemon ( self, name, delay, color ):
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+        while True:
+            self.ws.emit("log", {
+                "source": name,
+                "text": self.randomword(32),
+                "text_color": color
+            })
+
+            time.sleep(float(delay))
 
     def init_workers ( self, workers_config ):
         self.log(f"start initalising workers {len( workers_config )}")

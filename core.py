@@ -12,6 +12,7 @@ import yaml
 import numpy
 import string
 import subprocess
+import random
 import asyncio
 import sys
 import importlib
@@ -39,6 +40,10 @@ class CoreObject:
         self.ws = WS()
         self.db = DB()
         self.log( "inited" )
+
+    def randomword(self, length):
+        letters = string.ascii_lowercase
+        return ''.join(random.choice(letters) for i in range(length))
 
     def log ( self, text, color="CYAN" ):  
         c = colors[color]

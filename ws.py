@@ -76,6 +76,7 @@ class WS:
     def emit ( self, event_name, payload={} ):
         for ws in ConnectionHandler.clients:
             try: ws.broadcast( json.dumps( {
+                "session_id": WS.session_id,
                 "event": event_name,
                 "data": payload
             } ) )

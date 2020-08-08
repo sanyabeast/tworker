@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html>
     <head></head>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
+    rel="stylesheet">
+
     <style type="text/css">
         ::-webkit-scrollbar {
           width: 2px;
@@ -35,9 +38,36 @@
         ::-webkit-scrollbar-corner {
           background: transparent;
         }
+
+        .material-icons {
+            font-family: 'Material Icons';
+            font-weight: normal;
+            font-style: normal;
+            font-size: 24px;  /* Preferred icon size */
+            display: inline-block;
+            line-height: 1;
+            text-transform: none;
+            letter-spacing: normal;
+            word-wrap: normal;
+            white-space: nowrap;
+            direction: ltr;
+
+            /* Support for all WebKit browsers. */
+            -webkit-font-smoothing: antialiased;
+            /* Support for Safari and Chrome. */
+            text-rendering: optimizeLegibility;
+
+            /* Support for Firefox. */
+            -moz-osx-font-smoothing: grayscale;
+
+            /* Support for IE. */
+            font-feature-settings: 'liga';
+            }
     </style>
+    
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Ubuntu+Mono:wght@400;700&display=swap');
+
         html, body {
             width: 100%;
             height: 100%;
@@ -48,49 +78,103 @@
             font-size: 16px;
         }
         
-        div {
+        div, p {
             box-sizing: border-box;
             display: flex;
             flex-direction: column;
+            flex-shrink: 0;
+            cursor: default;
         }
 
         .button {
             cursor: pointer;
             padding: 12px;
-            border: 1px solid #eee;
+            border: 1px solid #a3a3a3;
+            position: relative;
+            border-radius: 2px;
+        }
+
+        .button:after {
+            position: absolute;
+            content: "";
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            transition: 0.25s ease;
+            background: red;
+            opacity: 0;
+        }
+
+        .button:hover:after {
+            opacity: 0.2;
         }
 
         .app {
             width: 100%;
             height: 100%;
             position: relative;
+            overflow: auto;
         }
 
+        .app[data-night-mode="0"] {
+            background: #ddd;
+            color: #111;
+        }
+
+        .app[data-night-mode="0"] .button {
+            border: 1px solid #111;
+        }
+
+        .app[data-night-mode="0"] .logcat {
+            background: #eee;
+            border: 1px solid #111;
+        }
+
+        .app[data-night-mode="0"] .logcat .header {
+            background: #ddd;
+            font-weight: bold;
+        }
+  
         .app .button.setup {
             position: absolute;
         }
 
+        .app > .menu {
+            flex-direction: column;
+            position: fixed;
+            top: 0;
+            left: 0;
+            user-select: none;
+            padding: 24px 12px;
+        }
+
+        .app > .menu .button {
+            margin-bottom: 12px;
+        }
+
         .logcats_container {
             width: 100%;
-            height: 100%;
+            height: auto;
             overflow: hidden;
             display: grid;
-            grid-gap: 8px;
+            grid-gap: 12px;
+            padding: 24px 24px 48px 80px;
         }
 
         .logcat {
-            background: black;
-            border: 2px solid #eee;
-        }
-
-        .logcat {
+            border-radius: 2px;
+            overflow: hidden;
             display: flex;
             flex-direction: column;
+            background: black;
+            border: 1px solid #eee;
         }
 
+      
         .logcat .header {
             height: 32px;
-            background: #111;
+            background: #090909;
             display: flex;
             flex-direction: row;
             align-items: center;
@@ -106,39 +190,112 @@
         .logcat .content .lines {
             width: 100%;
             height: 100%;
+            padding: 2px 8px 2px 2px;
             overflow: auto;
         }
 
-        .logcat .content .lines p {
-            margin: 0;
+        .logcat .content .lines .line {
+            margin: 2px 0;
+            border-radius: 2px;
+            background: #8d8d8d17;
+            padding: 2px 4px;
+            transition: background 0.3s ease;
+            position: relative;
+            flex-direction: row;
         }
 
-        .logcat .content .lines p[data-color="CYAN"] { color: #009688; }
-        .logcat .content .lines p[data-color="RED"] { color: #f44336; }
-        .logcat .content .lines p[data-color="MAGENTA"] { color: #9c27b0; }
-        .logcat .content .lines p[data-color="YELLOW"] { color: #ffeb3b; }
-        .logcat .content .lines p[data-color="GREEN"] { color: #8bc34a; }
-        .logcat .content .lines p[data-color="BLUE"] { color: #2196f3; }
-
-        .logcats_container[data-grid="default"] {
-            grid-template-columns: 1fr 1fr;
+        .logcat .content .lines .line:before {
+            content: "";
+            width: 8px;
+            background: red;
+            height: 8px;
+            margin-right: 12px;
+            border-radius: 2px;
+            transform: translate(50%, 50%);
+            /* position: absolute; */
+            left: 0;
+            top: 0;
         }
 
-        .logcats_container[data-grid="default"] .logcat {
-            height: 45vh;
+        .logcat .content .lines .line.new_line {
+            background-color: #2196f329;
         }
+
+        .logcat .content .lines .line:hover {
+            background: #f4433622;
+        }
+
+        .logcat .content .lines .line[data-color="CYAN"]     { color: #009688; }
+        .logcat .content .lines .line[data-color="RED"]      { color: #f44336; }
+        .logcat .content .lines .line[data-color="MAGENTA"]  { color: #9c27b0; }
+        .logcat .content .lines .line[data-color="YELLOW"]   { color: #ffeb3b; }
+        .logcat .content .lines .line[data-color="GREEN"]    { color: #8bc34a; }
+        .logcat .content .lines .line[data-color="BLUE"]     { color: #2196f3; }
+
+        .logcat .content .lines .line[data-color="CYAN"]:before     { background: #009688; }
+        .logcat .content .lines .line[data-color="RED"]:before      { background: #f44336; }
+        .logcat .content .lines .line[data-color="MAGENTA"]:before  { background: #9c27b0; }
+        .logcat .content .lines .line[data-color="YELLOW"]:before   { background: #ffeb3b; }
+        .logcat .content .lines .line[data-color="GREEN"]:before    { background: #8bc34a; }
+        .logcat .content .lines .line[data-color="BLUE"]:before     { background: #2196f3; }
+
+        .logcats_container[data-grid="4x3"] { grid-template-columns: 1fr 1fr 1fr 1fr; }
+        .logcats_container[data-grid="4x3"] .logcat {  height: 30vh; }
+
+        .logcats_container[data-grid="4x2"] { grid-template-columns: 1fr 1fr 1fr 1fr; }
+        .logcats_container[data-grid="4x2"] .logcat {  height: 45vh; }
+
+        .logcats_container[data-grid="3x2"] { grid-template-columns: 1fr 1fr 1fr; }
+        .logcats_container[data-grid="3x2"] .logcat {  height: 45vh; }
+
+        .logcats_container[data-grid="2x2"] { grid-template-columns: 1fr 1fr; }
+        .logcats_container[data-grid="2x2"] .logcat {  height: 45vh; }
+
+        .logcats_container[data-grid="2x1"] { grid-template-columns: 1fr 1fr; }
+        .logcats_container[data-grid="2x1"] .logcat {  height: 100vh; }
+
+        .logcats_container[data-grid="1x1"] { grid-template-columns: 1fr; }
+        .logcats_container[data-grid="1x1"] .logcat {  height: 100vh; }
     </style>
     <body>
         <div class="app">
-            <div class="logcats_container" data-grid="default">
-
+            <div class="logcats_container" data-grid="2x2">
+                
+            </div>
+            <div class="menu">
+                <div class="button view" onclick="on_view_switch()">
+                    <i class="material-icons">dashboard</i>
+                </div>
+                <div class="button view" onclick="on_theme_switch()">
+                    <i class="material-icons">nights_stay</i>
+                </div>
             </div>
         </div>
         <script>
-            let max_log = 100
+            let state = new Proxy ( {
+                max_log: 100,
+                current_view: 0,
+                night_mode: true
+            }, {
+                set ( target, prop, value ) {
+                    target[prop] = value
+                    save_state()
+                }
+            } )
+
+            let views = [
+                "4x3",
+                "4x2",
+                "3x2",
+                "2x2",
+                "2x1",
+                "1x1",
+            ]
+
             let logcats = {}
             let prev_session_id = null
 
+            
             class LogCat {
                 constructor ( logcat_id ) {
                     this.element = template( "#logcat" )
@@ -150,12 +307,15 @@
                 put_line ( text, color ) {
                     let rect = this.lines_el.getBoundingClientRect()
 
-                    while ( this.lines_el.children.length > max_log ) {
+                    while ( this.lines_el.children.length > state.max_log ) {
                         this.lines_el.removeChild( this.lines_el.children[0] )
                     }
 
                     let scroll_down = this.lines_el.scrollTop>=this.lines_el.scrollHeight - (rect.height + 2)
-                    let line = parse_html(`<p data-color="${color}">${ text }</p>`)
+                    let line = parse_html(`<div data-color="${color}" class="line new_line"><div>${ text }</div></div>`)
+                    setTimeout(()=>{
+                        line.classList.remove("new_line")
+                    }, 1000)
                     this.lines_el.appendChild( line )
                     if (scroll_down) this.lines_el.scrollTop = this.lines_el.scrollHeight
                 }
@@ -166,7 +326,7 @@
                 }
             }
 
-
+    
             function kill_all_logcats () {
                 for ( var k in logcats ) {
                     logcats[k].kill()
@@ -229,7 +389,49 @@
                 let c = r.content instanceof DocumentFragment ? r.content.children[0] : r.content
                 return document.importNode( c, true ); 
             }
-            document.addEventListener( "DOMContentLoaded", connect_ws )
+
+            function load_state () {
+                let data = localStorage.getItem( "state" )
+                if ( typeof data === "string" ) {
+                    data = JSON.parse( data )
+                    state = new Proxy( data, {
+                        set ( target, prop, value ) {
+                            target[prop] = value
+                            save_state()
+                        }
+                    } )
+
+                    if ( state.night_mode !== undefined ) {
+                        select( ".app" ).setAttribute( "data-night-mode", state.night_mode ? "1" : "0" )
+                    }
+
+                    if ( state.current_view !== undefined ) {
+                        select( ".logcats_container" ).setAttribute( "data-grid", views[state.current_view] )
+                    }
+                }
+            }
+
+            function save_state () {
+                let json = JSON.stringify( state )
+                localStorage.setItem( "state", json )
+            }
+
+            document.addEventListener( "DOMContentLoaded", ()=>{
+                load_state()
+                connect_ws()
+            } )
+        </script>
+        <script>
+            function on_view_switch () {
+                console.log(1)
+                state.current_view = ( state.current_view+1 ) % views.length
+                select( ".logcats_container" ).setAttribute( "data-grid", views[state.current_view] )
+            }
+
+            function on_theme_switch () {
+                state.night_mode = !state.night_mode
+                select( ".app" ).setAttribute( "data-night-mode", state.night_mode ? "1" : "0" )
+            }
         </script>
         <template id="logcat">
             <div class="logcat">
@@ -241,5 +443,6 @@
                 </div>
             </div>  
         </template> 
+       
     </body>
 </html>
